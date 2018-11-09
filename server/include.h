@@ -18,10 +18,10 @@
 
 #ifdef DEBUG
 #define PRINT_ERRNO printf("Errno msg: %s", strerror(errno))
-#define DEBUG(...) (printf(__VA_ARGS__))
+#define DEBUG_PRINT(...) (printf(__VA_ARGS__))
 #else
 #define PRINT_ERRNO
-#define DEBUG(...)
+#define DEBUG_PRINT(...)
 #endif
 
 #endif

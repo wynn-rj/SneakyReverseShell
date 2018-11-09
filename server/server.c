@@ -64,9 +64,9 @@ int main(int argc, char** argv)
             PRINT_ERRNO;
             return EXIT_FAILURE;
         }
-        DEBUG("Accepted connection from %s", inet_ntoa(client_addr.sin_addr));
+        DEBUG_PRINT("Accepted connection from %s", inet_ntoa(client_addr.sin_addr));
         pthread_attr_init(&attr);
-        pthread_create(&tid, &attr, respond_client, &new_sockfd);
+        pthread_create(&tid, &attr, respond_client, (void *)&new_sockfd);
     }
 
     return EXIT_SUCCESS;
@@ -82,4 +82,5 @@ void *respond_client(void *param)
     printf("Recieved message of length %i. Message content: %s",
             recv_length, buffer);
     close(sockfd);
+    return 0;
 }
