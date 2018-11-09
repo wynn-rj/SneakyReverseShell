@@ -3,13 +3,14 @@
  */
 #include "include.h"
 
+void RespondToRequest(int sockfd);
+
 int main(int argc, char** argv)
 {
     int port, sockfd, new_sockfd;
     struct sockaddr_in host_addr, client_addr;
-    socklen_t sockin_size;
+    socklen_t sin_size;
     int yes = 1;
-    char buffer[BUFFER_SIZE];
 
     if (argc != 2) {
         fprintf(stderr, "USAGE: %s <port>\n", argv[0]);
@@ -52,6 +53,22 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    while(1) {
+        sin_size = sizeof(struct sockaddr_in);
+        new_sockfd = accept(sockfd, (struct sockaddr *) &client_addr, &sin_size);
+        if (new_sockfd == -1) {
+            fprintf(stderr, "Faied to accept connection\n");
+            PRINT_ERRNO;
+            return EXIT_FAILURE;
+        }
+        Debug("Accepted connection from %s", inet_ntoa(client_addr.sin_addr));
+        RespondToRequest(new_sockfd);
+    }
+
 
     return EXIT_SUCCESS;
+}
+
+void RespondToRequest(int sockfd)
+{
 }
