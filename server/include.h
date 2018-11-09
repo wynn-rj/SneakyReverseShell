@@ -13,13 +13,15 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #ifdef DEBUG
 #define PRINT_ERRNO printf("Errno msg: %s", strerror(errno))
-#define Debug(...) (printf(__VA_ARGS__))
+#define DEBUG(...) (printf(__VA_ARGS__))
 #else
 #define PRINT_ERRNO
-#define Debug(...)
+#define DEBUG(...)
 #endif
 
 #endif

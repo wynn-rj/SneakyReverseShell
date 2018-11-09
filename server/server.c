@@ -3,7 +3,7 @@
  */
 #include "include.h"
 
-void RespondToRequest(int sockfd);
+void *respond_client(void *param);
 
 int main(int argc, char** argv)
 {
@@ -54,6 +54,9 @@ int main(int argc, char** argv)
     }
 
     while(1) {
+        pthread_t tid;
+        pthread_attr_t attr;
+
         sin_size = sizeof(struct sockaddr_in);
         new_sockfd = accept(sockfd, (struct sockaddr *) &client_addr, &sin_size);
         if (new_sockfd == -1) {
@@ -61,14 +64,22 @@ int main(int argc, char** argv)
             PRINT_ERRNO;
             return EXIT_FAILURE;
         }
-        Debug("Accepted connection from %s", inet_ntoa(client_addr.sin_addr));
-        RespondToRequest(new_sockfd);
+        DEBUG("Accepted connection from %s", inet_ntoa(client_addr.sin_addr));
+        pthread_attr_init(&attr);
+        pthread_create(&tid, &attr, respond_client, &new_sockfd);
     }
-
 
     return EXIT_SUCCESS;
 }
 
-void RespondToRequest(int sockfd)
+void *respond_client(void *param)
 {
+    int recv_length, sockfd = *(int *)param;
+    char buffer[BUFFER_SIZE];
+    char message[23] = "Connection established\n";
+    send(sockfd, message, 23, 0);
+    recv_length = recv(sockfd, &buffer, BUFFER_SIZE, 0);
+    printf("Recieved message of length %i. Message content: %s",
+            recv_length, buffer);
+    close(sockfd);
 }
