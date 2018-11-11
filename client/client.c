@@ -6,8 +6,8 @@
 
 int shell_loop(void *param);
 char* read_line();
-char** parse_line(char* line);
-void send_to_server(char** cmds);
+char** parse_line(char *line);
+void send_to_server(void *param, char **cmds);
 
 int main(int argc, char** argv)
 {
@@ -56,7 +56,7 @@ int shell_loop(void *param)
         printf("> ");
         line = read_line();
         args = parse_line(line);
-        send_to_server(args);
+        send_to_server(param,args);
     }while(1);
 
     free(line);
@@ -108,7 +108,7 @@ char **parse_line(char *line)
     return tokens;
 }
 
-void send_to_server(char **cmds)
+void send_to_server(void *param, char **cmds)
 {
 
 }
