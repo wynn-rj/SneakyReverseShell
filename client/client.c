@@ -38,7 +38,7 @@ char* read_line()
 
     char* line = NULL;
     size_t buffer = 0;
-    getline(&line, &buffer, stdin)
+    getline(&line, &buffer, stdin);
     return line;
 }
 
