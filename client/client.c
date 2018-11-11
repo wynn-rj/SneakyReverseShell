@@ -4,27 +4,59 @@
 
 #include "include.h"
 
-int shell_loop();
+int shell_loop(void *param);
 char* read_line();
 char** parse_line(char* line);
-
+void send_to_server(char** cmds);
 
 int main(int argc, char** argv)
 {
-    shell_loop();
+
+    struct sockaddr_in client_addr;
+    struct sockaddr_in server_addr;
+    int sockfd = 0;
+
+    if (argc != 2) {
+        fprintf(stderr, "USAGE: %s <port>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    if (isdigit(argv[1])) {
+        fprintf(stderr, "Expected port, got: %s\n", argv[1]);
+        return EXIT_FAILURE;
+    }
+
+    port = atoi(argv[1]);
+
+    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+        fprintf(stderr, "Error in socket creation\n");
+        return EXIT_FAILURE;
+    }
+
+    memset(&server_addr, '0', sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+
+    if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)){
+        fprintf(stderr, "Error: Connection Failed\n");
+        return EXIT_FAILURE;
+    }
+
+    shell_loop(sockfd);
     return EXIT_SUCCESS;
 }
 
-int shell_loop()
+int shell_loop(void *param)
 {
 
-    char* line;
-    char** args;
+    char *line;
+    char **args;
 
     do{
         printf("> ");
         line = read_line();
         args = parse_line(line);
+        send_to_server(args);
     }while(1);
 
     free(line);
@@ -36,7 +68,7 @@ int shell_loop()
 char *read_line()
 {
 
-    char* line = NULL;
+    char *line = NULL;
     size_t buffer = 0;
     getline(&line, &buffer, stdin);
     return line;
@@ -74,4 +106,9 @@ char **parse_line(char *line)
     }
 
     return tokens;
+}
+
+void send_to_server(char **cmds)
+{
+
 }
