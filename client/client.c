@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 
     struct sockaddr_in client_addr;
     struct sockaddr_in server_addr;
-    int sockfd = 0;
+    int sockfd = 0, port;
 
     if (argc != 2) {
         fprintf(stderr, "USAGE: %s <port>\n", argv[0]);
@@ -37,12 +37,12 @@ int main(int argc, char** argv)
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
 
-    if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)){
+    if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr))){
         fprintf(stderr, "Error: Connection Failed\n");
         return EXIT_FAILURE;
     }
 
-    shell_loop(sockfd);
+    shell_loop((void *)&sockfd);
     return EXIT_SUCCESS;
 }
 
