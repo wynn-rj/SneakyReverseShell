@@ -2,6 +2,9 @@
 
 #define SNEAKY_INCLUDE
 
+#define SHELL_TOK_BUFFSIZE 64
+#define SHELL_TOK_DELIM " \t\r\n\a"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

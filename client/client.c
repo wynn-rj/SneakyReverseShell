@@ -33,7 +33,7 @@ int shell_loop()
     return -1;
 }
 
-char* read_line()
+char *read_line()
 {
 
     char* line = NULL;
@@ -42,7 +42,28 @@ char* read_line()
     return line;
 }
 
-char** parse_line(char* line)
+char **parse_line(char *line)
 {
 
+    int buffsize = SHELL_TOK_BUFFSIZE;
+    int idx = 0;
+    char **tokens = malloc(buffsize * sizeof(char*));
+    char *token;
+
+    if(tokens == NULL){
+        fprintf(stderr, "shell: allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+
+    token = strtok(line, SHELL_TOK_DELIM);
+    while(token != NULL){
+        tokens[idx] = token;
+        idx++;
+
+        //TODO - add way to handle if number of tokens is larger than buffer
+
+        token = strtok(NULL, SHELL_TOK_DELIM);
+    }
+
+    return tokens;
 }
