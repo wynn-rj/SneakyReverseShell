@@ -60,7 +60,15 @@ char **parse_line(char *line)
         tokens[idx] = token;
         idx++;
 
-        //TODO - add way to handle if number of tokens is larger than buffer
+        if(idx >= buffsize){
+            buffsize += SHELL_TOK_BUFFSIZE;
+            tokens = realloc(tokens, buffsize * sizeof(char*));
+
+            if(tokens == NULL){
+                fprintf(stderr, "shell: allocation error\n");
+                exit(EXIT_FAILURE);
+            }
+        }
 
         token = strtok(NULL, SHELL_TOK_DELIM);
     }
