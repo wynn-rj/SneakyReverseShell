@@ -18,11 +18,28 @@ int main(int argc, char** argv)
 int shell_loop()
 {
 
+    char* line;
+    char** args;
+
+    do{
+        printf("> ");
+        line = read_line();
+        args = parse_line(line);
+    }while(1);
+
+    free(line);
+    free(args);
+
+    return -1;
 }
 
 char* read_line()
 {
 
+    char* line = NULL;
+    size_t buffer = 0;
+    getline(&line, &buffer, stdin)
+    return line;
 }
 
 char** parse_line(char* line)
