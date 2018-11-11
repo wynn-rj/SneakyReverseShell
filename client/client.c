@@ -4,6 +4,28 @@
 
 #include "include.h"
 
-int main(void){
+int shell_loop();
+char* read_line();
+char** parse_line(char* line);
+
+
+int main(int argc, char** argv)
+{
+    shell_loop();
+    return EXIT_SUCCESS;
+}
+
+int shell_loop()
+{
+
+}
+
+char* read_line()
+{
+
+}
+
+char** parse_line(char* line)
+{
 
 }
