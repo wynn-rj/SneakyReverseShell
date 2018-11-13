@@ -17,9 +17,12 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    if (isdigit(argv[1])) {
-        fprintf(stderr, "Expected port, got: %s\n", argv[1]);
-        return EXIT_FAILURE;
+    int length = strlen(argv[1]);
+    for (int i = 0; i < length; i++) {
+        if (!isdigit(argv[1][i])) {
+            fprintf(stderr, "Expected port, got: %s\n", argv[1]);
+            return EXIT_FAILURE;
+        }
     }
 
     port = atoi(argv[1]);
@@ -64,7 +67,7 @@ int main(int argc, char** argv)
             PRINT_ERRNO;
             return EXIT_FAILURE;
         }
-        DEBUG_PRINT("Accepted connection from %s", inet_ntoa(client_addr.sin_addr));
+        DEBUG_PRINT("Accepted connection from %s\n", inet_ntoa(client_addr.sin_addr));
         pthread_attr_init(&attr);
         pthread_create(&tid, &attr, respond_client, (void *)&new_sockfd);
     }
