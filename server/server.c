@@ -4,6 +4,7 @@
 #include "include.h"
 
 void *respond_client(void *param);
+int fork_and_execute(char *command);
 
 int main(int argc, char** argv)
 {
@@ -82,8 +83,36 @@ void *respond_client(void *param)
     char message[23] = "Connection established\n";
     send(sockfd, message, 23, 0);
     recv_length = recv(sockfd, &buffer, BUFFER_SIZE, 0);
-    printf("Recieved message of length %i. Message content: %s",
+    DEBUG_PRINT("Recieved message of length %i. Message content: %s",
             recv_length, buffer);
+
+    if (recv_length == -1) {
+        fprintf(stderr, "Got an error when trying to recieve message");
+        PRINT_ERRNO;
+        close(sockfd);
+        return 0;
+    } else if (recv_length > 0) {
+        if (fork_and_execute(buffer) == -1) {
+            fprintf(stderr, "Failed to execute command");
+        }
+    }
+
     close(sockfd);
     return 0;
+}
+
+int fork_and_execute(char *command)
+{
+    pid_t pid;
+
+    pid = fork();
+    if (pid < 0) {
+        fprintf(stderr, "Fork failed\b");
+        return -1;
+    } else if (pid == 0) {
+        return execlp("/bin/sh", "sh", "-c", command, NULL);
+    } else {
+        //TODO: Read result
+        return 0;
+    }
 }
