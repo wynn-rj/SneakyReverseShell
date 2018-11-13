@@ -11,7 +11,7 @@ void send_to_server(void *param, char **cmds);
 
 int main(int argc, char** argv)
 {
-
+    int port;
     struct sockaddr_in client_addr;
     struct sockaddr_in server_addr;
     int sockfd = 0, port;
@@ -21,28 +21,42 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    if (isdigit(argv[1])) {
-        fprintf(stderr, "Expected port, got: %s\n", argv[1]);
-        return EXIT_FAILURE;
+    int length = strlen(argv[1]);
+    for (int i = 0; i < length; i++) {
+        if (!isdigit(argv[1][i])) {
+            fprintf(stderr, "Expected port, got: %s\n", argv[1]);
+            return EXIT_FAILURE;
+        }
     }
 
     port = atoi(argv[1]);
 
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+    if((sockfd = socket(PF_INET, SOCK_STREAM, 0)) < 0){
         fprintf(stderr, "Error in socket creation\n");
         return EXIT_FAILURE;
     }
 
-    memset(&server_addr, '0', sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
+    server_addr.sin_addr.s_addr = 0;
+    memset(&(server_addr.sin_zero), '\0', sizeof(server_addr.sin_zero));
 
-    if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr))){
+
+    if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr))) {
         fprintf(stderr, "Error: Connection Failed\n");
         return EXIT_FAILURE;
     }
 
+
     shell_loop((void *)&sockfd);
+/*
+    char buffer[1024];
+    recv(sockfd, buffer, 1024, 0);
+    printf("Recieved: %s", buffer);
+
+    send(sockfd, "echo hi > file", 14, 0);
+*/
+
     return EXIT_SUCCESS;
 }
 
