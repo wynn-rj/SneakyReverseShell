@@ -64,7 +64,7 @@ int main(int argc, char** argv)
         sin_size = sizeof(struct sockaddr_in);
         new_sockfd = accept(sockfd, (struct sockaddr *) &client_addr, &sin_size);
         if (new_sockfd == -1) {
-            fprintf(stderr, "Faied to accept connection\n");
+            fprintf(stderr, "Failed to accept connection\n");
             PRINT_ERRNO;
             return EXIT_FAILURE;
         }
@@ -83,17 +83,17 @@ void *respond_client(void *param)
     char message[23] = "Connection established\n";
     send(sockfd, message, 23, 0);
     recv_length = recv(sockfd, &buffer, BUFFER_SIZE, 0);
-    DEBUG_PRINT("Recieved message of length %i. Message content: %s",
+    DEBUG_PRINT("Recieved message of length %i. Message content: %s\n",
             recv_length, buffer);
 
     if (recv_length == -1) {
-        fprintf(stderr, "Got an error when trying to recieve message");
+        fprintf(stderr, "Got an error when trying to recieve message\n");
         PRINT_ERRNO;
         close(sockfd);
         return 0;
     } else if (recv_length > 0) {
         if (fork_and_execute(buffer) == -1) {
-            fprintf(stderr, "Failed to execute command");
+            fprintf(stderr, "Failed to execute command\n");
         }
     }
 
@@ -107,7 +107,7 @@ int fork_and_execute(char *command)
 
     pid = fork();
     if (pid < 0) {
-        fprintf(stderr, "Fork failed\b");
+        fprintf(stderr, "Fork failed\n");
         return -1;
     } else if (pid == 0) {
         return execlp("/bin/sh", "sh", "-c", command, NULL);
