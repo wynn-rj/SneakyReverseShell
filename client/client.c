@@ -125,8 +125,9 @@ void send_to_server(void *param, char *line)
 
     do{
         recv_len = recv(sockfd, &buffer, 1024, 0);
-        printf("%s", buffer);
+        if(recv_len > 0){
+            printf("%s", buffer);
+        }
     } while(recv_len == 1024);
 
-    printf("\n");
 }
