@@ -125,5 +125,13 @@ char **parse_line(char *line)
 
 void send_to_server(void *param, char *line)
 {
+    int sockfd = *(int *)param;
+    char buffer[1024];
 
+    send(sockfd, line, strlen(line), 0);
+
+    while(recv(sockfd, &buffer, 1024, 0) > 0){
+        printf("%s", buffer);
+    }
+    printf("\n");
 }
