@@ -56,6 +56,7 @@ int main(int argc, char** argv)
     send(sockfd, "echo hi > file", 14, 0);
 */
 
+    close(sockfd);
     return EXIT_SUCCESS;
 }
 
@@ -69,7 +70,7 @@ int shell_loop(void *param)
         read_line(line, 1024);
         //args = parse_line(line);
         send_to_server(param,line);
-    }while(1);
+    }while(strncmp(line, "shutdown", 8) != 0 && strncmp(line, "disconnect", 10) != 0);
 
     return -1;
 }
