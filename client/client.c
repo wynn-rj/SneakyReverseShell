@@ -5,14 +5,13 @@
 #include "include.h"
 
 int shell_loop(void *param);
-char* read_line();
-char** parse_line(char *line);
+void read_line(char* buffer, size_t buf_size);
+//char** parse_line(char *line);
 void send_to_server(void *param, char *line);
 
 int main(int argc, char** argv)
 {
     int port;
-    struct sockaddr_in client_addr;
     struct sockaddr_in server_addr;
     int sockfd = 0;
 
@@ -63,29 +62,22 @@ int main(int argc, char** argv)
 int shell_loop(void *param)
 {
 
-    char *line;
-    char **args;
+    char line[1024];
 
     do{
         printf("> ");
-        line = read_line();
+        read_line(line, 1024);
         //args = parse_line(line);
         send_to_server(param,line);
     }while(1);
 
-    free(line);
-    free(args);
-
     return -1;
 }
 
-char *read_line()
+void read_line(char *buffer, size_t buf_size)
 {
-
-    char *line = NULL;
-    size_t buffer = 0;
-    getline(&line, &buffer, stdin);
-    return line;
+    fgets(buffer, buf_size, stdin);
+    buffer[strlen(buffer) - 1] = 0;
 }
 
 /*
@@ -125,13 +117,15 @@ char **parse_line(char *line)
 
 void send_to_server(void *param, char *line)
 {
-    int sockfd = *(int *)param;
+    int sockfd = *(int *)param, recv_len;
     char buffer[1024];
 
     send(sockfd, line, strlen(line), 0);
 
-    while(recv(sockfd, &buffer, 1024, 0) > 0){
+    do{
+        recv_len = recv(sockfd, &buffer, 1024, 0);
         printf("%s", buffer);
-    }
+    } while(recv_len == 1024);
+
     printf("\n");
 }
