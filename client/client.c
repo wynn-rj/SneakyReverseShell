@@ -7,14 +7,14 @@
 int shell_loop(void *param);
 char* read_line();
 char** parse_line(char *line);
-void send_to_server(void *param, char **cmds);
+void send_to_server(void *param, char *line);
 
 int main(int argc, char** argv)
 {
     int port;
     struct sockaddr_in client_addr;
     struct sockaddr_in server_addr;
-    int sockfd = 0, port;
+    int sockfd = 0;
 
     if (argc != 2) {
         fprintf(stderr, "USAGE: %s <port>\n", argv[0]);
