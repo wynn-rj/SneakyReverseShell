@@ -69,8 +69,8 @@ int shell_loop(void *param)
     do{
         printf("> ");
         line = read_line();
-        args = parse_line(line);
-        send_to_server(param,args);
+        //args = parse_line(line);
+        send_to_server(param,line);
     }while(1);
 
     free(line);
@@ -88,6 +88,7 @@ char *read_line()
     return line;
 }
 
+/*
 char **parse_line(char *line)
 {
 
@@ -120,9 +121,9 @@ char **parse_line(char *line)
     }
 
     return tokens;
-}
+}*/
 
-void send_to_server(void *param, char **cmds)
+void send_to_server(void *param, char *line)
 {
 
 }
