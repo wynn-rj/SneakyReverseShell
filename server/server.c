@@ -130,15 +130,42 @@ void *respond_client(void *param)
 int fork_and_execute(char *command, int sockfd)
 {
     pid_t pid;
+    char *formatted_command, file[8], *dump;
+    int wstatus;
+    long out_len;
+    FILE *out;
+    sprintf(file, "%doutput", sockfd);
+    formatted_command = (char*)malloc(strlen(command) + strlen(file) + 4);
+    sprintf(formatted_command, "%s > %s", command, file);
+    DEBUG_PRINT("%s\n", formatted_command);
 
     pid = fork();
     if (pid < 0) {
         fprintf(stderr, "Fork failed\n");
         return -1;
     } else if (pid == 0) {
-        return execlp("/bin/sh", "sh", "-c", command, NULL);
+        return execlp("/bin/sh", "sh", "-c", formatted_command, NULL);
     } else {
-        //TODO: Read result
+        waitpid(pid, &wstatus, 0);
+        DEBUG_PRINT("File \"%s\" made ", file);
+
+        out = fopen(file, "rb");
+        fseek(out, 0, SEEK_END);
+        out_len = ftell(out);
+        fseek(out, 0, SEEK_SET);
+        dump = (char*)malloc(out_len + 1);
+        fread(dump, out_len, 1, out);
+        DEBUG_PRINT("... read ");
+
+        fclose(out);
+        dump[out_len] = 0;
+        unlink(file);
+        DEBUG_PRINT("... deleted ");
+
+        send(sockfd, dump, out_len + 1, 0);
+        DEBUG_PRINT("... sent\n");
+
+        free(formatted_command);
         return 0;
     }
 }
