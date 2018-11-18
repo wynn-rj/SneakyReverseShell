@@ -88,23 +88,41 @@ void *respond_client(void *param)
     int recv_length, sockfd = msg->sockfd;
     long loop = 1;
     char buffer[BUFFER_SIZE];
-    char message[23] = "Connection established\n";
-    send(sockfd, message, 23, 0);
-    recv_length = recv(sockfd, &buffer, BUFFER_SIZE, 0);
-    DEBUG_PRINT("Recieved message of length %i. Message content: %s\n",
-            recv_length, buffer);
 
-    if (recv_length == -1) {
-        fprintf(stderr, "Got an error when trying to recieve message\n");
-        PRINT_ERRNO;
-        close(sockfd);
-        return 0;
-    } else if (recv_length > 0) {
-        if (fork_and_execute(buffer) == -1) {
-            fprintf(stderr, "Failed to execute command\n");
+    while(loop && keep_running) {
+        recv_length = recv(sockfd, &buffer, BUFFER_SIZE, 0);
+
+        if (recv_length == -1) {
+            fprintf(stderr, "Got an error when trying to recieve message\n");
+            PRINT_ERRNO;
+            close(sockfd);
+            return 0;
+        } else if (recv_length > 0) {
+            if (recv_length < BUFFER_SIZE)
+            {
+                buffer[recv_length] = 0;
+            }
+            DEBUG_PRINT("Recieved message of length %i. Message content: %s\n",
+                    recv_length, buffer);
+
+            if (strncmp(buffer, DISCONNECT_MSG, strlen(DISCONNECT_MSG)) == 0) {
+                loop = 0;
+            } else if (strncmp(buffer, SHUTDOWN_MSG, strlen(SHUTDOWN_MSG)) == 0) {
+                DEBUG_PRINT("Shutdown recieved\n");
+                keep_running = 0;
+                DEBUG_PRINT("Disconnecting socket: %d\n", sockfd);
+                free(msg);
+                close(sockfd);
+                sleep(1);
+                exit(EXIT_SUCCESS);
+            } else if (fork_and_execute(buffer, sockfd) == -1) {
+                fprintf(stderr, "Failed to execute command\n");
+            }
         }
     }
 
+    DEBUG_PRINT("Disconnecting socket: %d\n", sockfd);
+    free(msg);
     close(sockfd);
     return 0;
 }
