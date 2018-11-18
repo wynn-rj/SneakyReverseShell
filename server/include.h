@@ -24,7 +24,11 @@ struct thread_msg {
 };
 
 #ifdef DEBUG
-#define PRINT_ERRNO printf("Errno msg: %s", strerror(errno))
+#define PRINT_ERRNO \
+do { \
+    printf("Errno msg: %s", strerror(errno)); \
+    fflush(stdout); \
+} while(0)
 #define DEBUG_PRINT(...) \
 do { \
     printf(__VA_ARGS__); \
