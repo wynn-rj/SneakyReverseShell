@@ -4,7 +4,9 @@
 #include "include.h"
 
 void *respond_client(void *param);
-int fork_and_execute(char *command);
+int fork_and_execute(char *command, int sockfd);
+
+int keep_running = 1;
 
 int main(int argc, char** argv)
 {
@@ -57,9 +59,10 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    while(1) {
+    while(keep_running) {
         pthread_t tid;
         pthread_attr_t attr;
+        struct thread_msg *params;
 
         sin_size = sizeof(struct sockaddr_in);
         new_sockfd = accept(sockfd, (struct sockaddr *) &client_addr, &sin_size);
@@ -68,9 +71,12 @@ int main(int argc, char** argv)
             PRINT_ERRNO;
             return EXIT_FAILURE;
         }
-        DEBUG_PRINT("Accepted connection from %s\n", inet_ntoa(client_addr.sin_addr));
+        DEBUG_PRINT("Accepted connection from %s on socket %d\n",
+                inet_ntoa(client_addr.sin_addr), new_sockfd);
         pthread_attr_init(&attr);
-        pthread_create(&tid, &attr, respond_client, (void *)&new_sockfd);
+        params = (struct thread_msg *)malloc(sizeof(struct thread_msg));
+        params->sockfd = new_sockfd;
+        pthread_create(&tid, &attr, respond_client, params);
     }
 
     return EXIT_SUCCESS;
@@ -78,7 +84,9 @@ int main(int argc, char** argv)
 
 void *respond_client(void *param)
 {
-    int recv_length, sockfd = *(int *)param;
+    struct thread_msg *msg = (struct thread_msg *)param;
+    int recv_length, sockfd = msg->sockfd;
+    long loop = 1;
     char buffer[BUFFER_SIZE];
     char message[23] = "Connection established\n";
     send(sockfd, message, 23, 0);
@@ -101,7 +109,7 @@ void *respond_client(void *param)
     return 0;
 }
 
-int fork_and_execute(char *command)
+int fork_and_execute(char *command, int sockfd)
 {
     pid_t pid;
 
