@@ -88,14 +88,14 @@ static int page_read_only(ulong address)
     return 0;
 }
 
-static void replace_syscall(ulong offset, ulong func_address)
+static void replace_syscall(ulong offset, ulong func_address, void *old_func)
 {
     syscall_table = (ulong *)kallsyms_lookup_name(SYS_CALL_TABLE);
 
     if (is_syscall_table(syscall_table)) {
         printk(KERN_INFO "%s: Syscall table address : %p\n", TAG, syscall_table);
         page_read_write((ulong)syscall_table);
-        original_syscall = (void *)(syscall_table[offset]);
+        old_func = (void *)(syscall_table[offset]);
         printk(KERN_INFO "%s: Syscall at offset %lu : %p\n", TAG, offset,
                 original_syscall);
         printk(KERN_INFO "%s: Custom syscall address %p\n", TAG,
