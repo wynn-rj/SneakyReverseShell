@@ -13,11 +13,23 @@ int main(int argc, char** argv)
 {
     int port;
     struct sockaddr_in server_addr;
+    struct in_addr addr;
     int sockfd = 0;
 
-    if (argc != 2) {
-        fprintf(stderr, "USAGE: %s <port>\n", argv[0]);
+    if (argc < 2 || argc > 3) {
+        fprintf(stderr, "USAGE: %s <port> [ip-address]\n", argv[0]);
         return EXIT_FAILURE;
+    }
+
+    if (argc != 3 || !inet_aton(argv[2], &addr)) {
+        addr.s_addr = 0;
+        if (argc == 3) {
+            fprintf(stderr, "Bad address, using default\n");
+        } else {
+#ifdef DEBUG
+            printf("No address specified, defaulting to local host\n");
+#endif
+        }
     }
 
     int length = strlen(argv[1]);

