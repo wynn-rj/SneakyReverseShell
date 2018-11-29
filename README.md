@@ -6,7 +6,7 @@ from multiple different clients.
 # Build
 The code can be built by doing
 ```
-Make
+make
 ```
 
 # Run
