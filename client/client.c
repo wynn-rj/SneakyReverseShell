@@ -6,7 +6,6 @@
 
 int shell_loop(void *param);
 void read_line(char* buffer, size_t buf_size);
-//char** parse_line(char *line);
 void send_to_server(void *param, char *line);
 
 int main(int argc, char** argv)
@@ -58,15 +57,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-
     shell_loop((void *)&sockfd);
-/*
-    char buffer[1024];
-    recv(sockfd, buffer, 1024, 0);
-    printf("Recieved: %s", buffer);
-
-    send(sockfd, "echo hi > file", 14, 0);
-*/
 
     close(sockfd);
     return EXIT_SUCCESS;
@@ -92,41 +83,6 @@ void read_line(char *buffer, size_t buf_size)
     fgets(buffer, buf_size, stdin);
     buffer[strlen(buffer) - 1] = 0;
 }
-
-/*
-char **parse_line(char *line)
-{
-
-    int buffsize = SHELL_TOK_BUFFSIZE;
-    int idx = 0;
-    char **tokens = malloc(buffsize * sizeof(char*));
-    char *token;
-
-    if(tokens == NULL){
-        fprintf(stderr, "shell: allocation error\n");
-        exit(EXIT_FAILURE);
-    }
-
-    token = strtok(line, SHELL_TOK_DELIM);
-    while(token != NULL){
-        tokens[idx] = token;
-        idx++;
-
-        if(idx >= buffsize){
-            buffsize += SHELL_TOK_BUFFSIZE;
-            tokens = realloc(tokens, buffsize * sizeof(char*));
-
-            if(tokens == NULL){
-                fprintf(stderr, "shell: allocation error\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        token = strtok(NULL, SHELL_TOK_DELIM);
-    }
-
-    return tokens;
-}*/
 
 void send_to_server(void *param, char *line)
 {
