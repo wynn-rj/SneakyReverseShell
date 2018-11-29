@@ -19,6 +19,6 @@ server/server.o <port> [ip-address]
 
 The client takes the same arguments as the server and can be run by doing:
 ```
-client/client <port> [ip-address]
+client/client.o <port> [ip-address]
 ```
 

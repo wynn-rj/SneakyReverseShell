@@ -1,5 +1,5 @@
 CC=gcc
-OUTPUT=client
+OUTPUT=client.o
 SOURCE=client.c
 INCLUDE=-lpthread
 DEBUGFLAGS= -g -Wall -DDEBUG
