@@ -9,6 +9,16 @@ The code can be built by doing
 make
 ```
 
+The kernel module can be inserted by doing 
+```
+insmod lkm/syscall.ko
+```
+The kernel module can subsequently be removed by doing
+```
+rmmod syscall
+```
+Root privileges will be needed to insert and remove the kernel module 
+
 # Run
 Once the kernel module has been inserted the server can be run using the
 following command. A port must be specified, if an ip-address is not specified
